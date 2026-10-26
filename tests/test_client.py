@@ -146,7 +146,7 @@ def test_cli_status_and_version(home):
     r = subprocess.run([sys.executable, "-m", "agentmail_client", "--version"],
                        capture_output=True, text=True, cwd="python",
                        env={**os.environ, "AGENTMAIL_HOME": str(home)})
-    assert r.returncode == 0 and "0.1.0" in r.stdout
+    assert r.returncode == 0 and "0.1.1" in r.stdout
 
 
 def test_mcp_tools_list_and_claim(home, relay, monkeypatch):

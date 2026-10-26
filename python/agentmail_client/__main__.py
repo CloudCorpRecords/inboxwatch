@@ -96,48 +96,60 @@ def main(argv=None):
     p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     p.add_argument("--relay", default=None, help="relay domain (default: INBOXWATCH_RELAY)")
     p.add_argument("--home", default=None, help="state dir (default: INBOXWATCH_HOME or ~/.inboxwatch)")
+    # The same two flags on every subcommand: the documented shape is
+    # `inboxwatch claim sam --relay post.example.com`, with the flag
+    # after the subcommand, and argparse only accepts a flag where it
+    # is defined. Before this, that documented form exited 2 with
+    # "unrecognized arguments" (found by the dogfood pass,
+    # tests/test_dogfood.py).
+    common = argparse.ArgumentParser(add_help=False)
+    # SUPPRESS defaults: a subparser default would clobber a value
+    # given in the top-level position (`inboxwatch --relay X claim
+    # sam`) when the subcommand itself carries no flag.
+    common.add_argument("--relay", default=argparse.SUPPRESS, help="relay domain (default: INBOXWATCH_RELAY)")
+    common.add_argument("--home", default=argparse.SUPPRESS, help="state dir (default: INBOXWATCH_HOME or ~/.inboxwatch)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    s = sub.add_parser("claim", help="claim an address on the relay, e.g. claim sam --relay post.example.com")
+    s = sub.add_parser("claim", parents=[common], help="claim an address on the relay, e.g. claim sam --relay post.example.com")
     s.add_argument("name"); s.set_defaults(f=cmd_claim)
 
-    s = sub.add_parser("lookup", help="look up an address's public keys")
+    s = sub.add_parser("lookup", parents=[common], help="look up an address's public keys")
     s.add_argument("address"); s.set_defaults(f=cmd_lookup)
 
-    s = sub.add_parser("send", help="seal and send a message now")
+    s = sub.add_parser("send", parents=[common], help="seal and send a message now")
     s.add_argument("to", help="recipient address, or comma separated list")
     s.add_argument("text", help="message text")
     s.add_argument("--subject", default=""); s.add_argument("--kind", default="message")
     s.add_argument("--thread", default=None); s.set_defaults(f=cmd_send)
 
-    s = sub.add_parser("check", help="pick up new mail from the relay"); s.set_defaults(f=cmd_check)
+    s = sub.add_parser("check", parents=[common], help="pick up new mail from the relay"); s.set_defaults(f=cmd_check)
 
-    s = sub.add_parser("inbox", help="list messages (boxes: inbox, requests, sent, held)")
+    s = sub.add_parser("inbox", parents=[common], help="list messages (boxes: inbox, requests, sent, held)")
     s.add_argument("--box", default="inbox"); s.set_defaults(f=cmd_inbox)
 
-    s = sub.add_parser("read", help="read one message by id")
+    s = sub.add_parser("read", parents=[common], help="read one message by id")
     s.add_argument("id"); s.set_defaults(f=cmd_read)
 
-    s = sub.add_parser("threads", help="list threads")
+    s = sub.add_parser("threads", parents=[common], help="list threads")
     s.add_argument("--box", default="inbox"); s.set_defaults(f=cmd_threads)
 
-    s = sub.add_parser("contacts", help="list pinned contacts"); s.set_defaults(f=cmd_contacts)
+    s = sub.add_parser("contacts", parents=[common], help="list pinned contacts"); s.set_defaults(f=cmd_contacts)
 
-    s = sub.add_parser("trust", help="set a contact's trust: unknown, known, mine, blocked")
+    s = sub.add_parser("trust", parents=[common], help="set a contact's trust: unknown, known, mine, blocked")
     s.add_argument("address"); s.add_argument("trust"); s.set_defaults(f=cmd_trust)
 
-    s = sub.add_parser("accept-keys", help="pin a contact's new keys after checking the safety number")
+    s = sub.add_parser("accept-keys", parents=[common], help="pin a contact's new keys after checking the safety number")
     s.add_argument("address"); s.set_defaults(f=cmd_accept_keys)
 
-    s = sub.add_parser("register-selfhost", help="register your self-hosted endpoint on the relay directory")
+    s = sub.add_parser("register-selfhost", parents=[common], help="register your self-hosted endpoint on the relay directory")
     s.add_argument("endpoint"); s.set_defaults(f=cmd_register_selfhost)
 
-    s = sub.add_parser("heartbeat", help="tell the relay your address is alive"); s.set_defaults(f=cmd_heartbeat)
+    s = sub.add_parser("heartbeat", parents=[common], help="tell the relay your address is alive"); s.set_defaults(f=cmd_heartbeat)
 
-    s = sub.add_parser("selfhost-lookup", help="look up an address's self-hosted endpoint")
+    s = sub.add_parser("selfhost-lookup", parents=[common], help="look up an address's self-hosted endpoint")
     s.add_argument("address"); s.set_defaults(f=cmd_selfhost)
 
-    s = sub.add_parser("status", help="show setup state"); s.set_defaults(f=cmd_status)
+    s = sub.add_parser("status", parents=[common], help="show setup state"); s.set_defaults(f=cmd_status)
 
     args = p.parse_args(argv)
     if args.home:
